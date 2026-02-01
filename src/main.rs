@@ -5,7 +5,7 @@ use std::fs;
 struct Interpreter {
     reg: [i32; 16],
     mem: [i32; 256],
-    line: usize,
+    line_num: usize,
     running: bool,
     source: Vec<String>,
     jump_map: HashMap<String, usize>,
@@ -28,10 +28,41 @@ impl Interpreter {
         Self {
             reg: [0; 16],
             mem: [0; 256],
-            line: 0,
+            line_num: 0,
             running: true,
             source: source_vec,
             jump_map: jump_hashmap,
+        }
+    }
+
+    fn tick(&mut self) {
+        let line = &self.source[self.line_num];
+        if line.ends_with(':') {
+            self.line_num += 1;
+            return;
+        }
+        let mut line = line.split_whitespace();
+        match line.next() {
+            Some("LDR") => (),
+            Some("STR") => (),
+            Some("ADD") => (),
+            Some("SUB") => (),
+            Some("MOV") => (),
+            Some("CMP") => (),
+            Some("B") => (),
+            Some("BEQ") => (),
+            Some("BNE") => (),
+            Some("BGT") => (),
+            Some("BLT") => (),
+            Some("AND") => (),
+            Some("ORR") => (),
+            Some("EOR") => (),
+            Some("MVN") => (),
+            Some("LSL") => (),
+            Some("LSR") => (),
+            Some("HALT") => (),
+            Some(&_) => (),
+            None => (),
         }
     }
 }
