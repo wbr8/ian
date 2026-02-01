@@ -1,0 +1,6 @@
+INP R0,2
+label1:
+INP R1,2
+ADD R2,R1,R0
+label2:
+HALT
