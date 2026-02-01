@@ -2,11 +2,20 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 
+enum Compare {
+    EQ,
+    NE,
+    GT,
+    LT,
+    NONE,
+}
+
 struct Interpreter {
     reg: [i32; 16],
     mem: [i32; 256],
     line_num: usize,
     running: bool,
+    cmp: Compare,
     source: Vec<String>,
     jump_map: HashMap<String, usize>,
 }
@@ -30,6 +39,7 @@ impl Interpreter {
             mem: [0; 256],
             line_num: 0,
             running: true,
+            cmp: Compare::NONE,
             source: source_vec,
             jump_map: jump_hashmap,
         }
@@ -43,13 +53,131 @@ impl Interpreter {
         }
         let mut line = line.split_whitespace();
         match line.next() {
-            Some("LDR") => (),
-            Some("STR") => (),
-            Some("ADD") => (),
-            Some("SUB") => (),
+            Some("LDR") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+                let mem_ref = line.next().unwrap().parse::<usize>().unwrap();
+                self.reg[d] = self.mem[mem_ref];
+            }
+
+            Some("STR") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+                let mem_ref = line.next().unwrap().parse::<usize>().unwrap();
+                self.mem[mem_ref] = self.reg[d];
+            }
+
+            Some("ADD") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = self.reg[n]
+                        + operand2
+                            .strip_prefix('#')
+                            .expect("hashtag")
+                            .parse::<i32>()
+                            .unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[n]
+                        + self.reg[operand2
+                            .strip_prefix("R")
+                            .expect("R")
+                            .parse::<usize>()
+                            .unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
+            Some("SUB") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = self.reg[n]
+                        - operand2
+                            .strip_prefix('#')
+                            .expect("hashtag")
+                            .parse::<i32>()
+                            .unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[n]
+                        - self.reg[operand2
+                            .strip_prefix("R")
+                            .expect("R")
+                            .parse::<usize>()
+                            .unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
             Some("MOV") => (),
             Some("CMP") => (),
-            Some("B") => (),
+
+            Some("B") => {
+                let label = line
+                    .next()
+                    .expect("Missing label")
+                    .strip_suffix(':')
+                    .unwrap()
+                    .to_string();
+                self.line_num = *self.jump_map.get(&label).unwrap();
+            }
+
             Some("BEQ") => (),
             Some("BNE") => (),
             Some("BGT") => (),
@@ -60,7 +188,9 @@ impl Interpreter {
             Some("MVN") => (),
             Some("LSL") => (),
             Some("LSR") => (),
-            Some("HALT") => (),
+            Some("HALT") => {
+                self.running = false;
+            }
             Some(&_) => (),
             None => (),
         }
