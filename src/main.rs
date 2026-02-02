@@ -165,7 +165,36 @@ impl Interpreter {
                 }
             }
 
-            Some("MOV") => (),
+            Some("MOV") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = operand2
+                        .strip_prefix('#')
+                        .expect("hashtag")
+                        .parse::<i32>()
+                        .unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[operand2
+                        .strip_prefix('R')
+                        .expect("R")
+                        .parse::<usize>()
+                        .unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
             Some("CMP") => (),
 
             Some("B") => {
@@ -182,6 +211,7 @@ impl Interpreter {
             Some("BNE") => (),
             Some("BGT") => (),
             Some("BLT") => (),
+
             Some("AND") => (),
             Some("ORR") => (),
             Some("EOR") => (),
@@ -210,4 +240,63 @@ fn main() {
     let int = Interpreter::new(source);
     println!("{is:?}", is = int.source);
     println!("{jm:?}", jm = int.jump_map);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ldr() {}
+
+    #[test]
+    fn str() {}
+
+    #[test]
+    fn add() {}
+
+    #[test]
+    fn sub() {}
+
+    #[test]
+    fn mov() {}
+
+    #[test]
+    fn cmp() {}
+
+    #[test]
+    fn b() {}
+
+    #[test]
+    fn beq() {}
+
+    #[test]
+    fn bne() {}
+
+    #[test]
+    fn bgt() {}
+
+    #[test]
+    fn blt() {}
+
+    #[test]
+    fn and() {}
+
+    #[test]
+    fn orr() {}
+
+    #[test]
+    fn eor() {}
+
+    #[test]
+    fn mvn() {}
+
+    #[test]
+    fn lsl() {}
+
+    #[test]
+    fn lsr() {}
+
+    #[test]
+    fn halt() {}
 }
