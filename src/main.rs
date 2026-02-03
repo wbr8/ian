@@ -252,7 +252,7 @@ impl Interpreter {
                     .strip_suffix(':')
                     .unwrap()
                     .to_string();
-                
+
                 if let Compare::EQ = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
                 }
@@ -293,18 +293,194 @@ impl Interpreter {
                     .strip_suffix(':')
                     .unwrap()
                     .to_string();
-                
+
                 if let Compare::LT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
                 }
             }
 
-            Some("AND") => (),
-            Some("ORR") => (),
-            Some("EOR") => (),
-            Some("MVN") => (),
-            Some("LSL") => (),
-            Some("LSR") => (),
+            Some("AND") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = self.reg[n] & operand2.strip_prefix('#').expect("hashtag").parse::<i32>().unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[n] & self.reg[operand2.strip_prefix('R').expect("R").parse::<usize>().unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
+            Some("ORR") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = self.reg[n] | operand2.strip_prefix('#').expect("hashtag").parse::<i32>().unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[n] | self.reg[operand2.strip_prefix('R').expect("R").parse::<usize>().unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
+            Some("EOR") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = self.reg[n] ^ operand2.strip_prefix('#').expect("hashtag").parse::<i32>().unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[n] ^ self.reg[operand2.strip_prefix('R').expect("R").parse::<usize>().unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
+            Some("MVN") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = ! operand2.strip_prefix('#').expect("hashtag").parse::<i32>().unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = ! self.reg[operand2.strip_prefix('R').expect("R").parse::<usize>().unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
+            Some("LSL") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = self.reg[n] << operand2.strip_prefix('#').expect("hashtag").parse::<i32>().unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[n] << self.reg[operand2.strip_prefix('R').expect("R").parse::<usize>().unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
+            Some("LSR") => {
+                let d = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    self.reg[d] = self.reg[n] >> operand2.strip_prefix('#').expect("hashtag").parse::<i32>().unwrap();
+                } else if operand2.starts_with('R') {
+                    self.reg[d] = self.reg[n] >> self.reg[operand2.strip_prefix('R').expect("R").parse::<usize>().unwrap()];
+                } else {
+                    panic!("operand2 error");
+                }
+            }
+
             Some("HALT") => {
                 self.running = false;
             }
