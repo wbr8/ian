@@ -1,10 +1,10 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
 
 enum Compare {
     EQ,
-    NE,
     GT,
     LT,
     NONE,
@@ -195,7 +195,45 @@ impl Interpreter {
                 }
             }
 
-            Some("CMP") => (),
+            Some("CMP") => {
+                let n = line
+                    .next()
+                    .unwrap()
+                    .strip_prefix('R')
+                    .expect("Invalid syntax")
+                    .strip_suffix(',')
+                    .expect("Invalid syntax")
+                    .parse::<usize>()
+                    .unwrap();
+
+                let operand2 = line.next().unwrap();
+
+                if operand2.starts_with('#') {
+                    let value: i32 = operand2
+                        .strip_suffix('#')
+                        .expect("hashtag")
+                        .parse()
+                        .unwrap();
+                    match self.reg[n].cmp(&value) {
+                        Ordering::Less => self.cmp = Compare::LT,
+                        Ordering::Greater => self.cmp = Compare::GT,
+                        Ordering::Equal => self.cmp = Compare::EQ,
+                    }
+                } else if operand2.starts_with('R') {
+                    let value: i32 = self.reg[operand2
+                        .strip_suffix('R')
+                        .expect("R")
+                        .parse::<usize>()
+                        .unwrap()];
+                    match self.reg[n].cmp(&value) {
+                        Ordering::Less => self.cmp = Compare::LT,
+                        Ordering::Greater => self.cmp = Compare::GT,
+                        Ordering::Equal => self.cmp = Compare::EQ,
+                    }
+                } else {
+                    panic!("operand2 error");
+                }
+            }
 
             Some("B") => {
                 let label = line
@@ -207,10 +245,59 @@ impl Interpreter {
                 self.line_num = *self.jump_map.get(&label).unwrap();
             }
 
-            Some("BEQ") => (),
-            Some("BNE") => (),
-            Some("BGT") => (),
-            Some("BLT") => (),
+            Some("BEQ") => {
+                let label = line
+                    .next()
+                    .expect("Missing label")
+                    .strip_suffix(':')
+                    .unwrap()
+                    .to_string();
+                
+                if let Compare::EQ = self.cmp {
+                    self.line_num = *self.jump_map.get(&label).unwrap();
+                }
+            }
+
+            Some("BNE") => {
+                let label = line
+                    .next()
+                    .expect("Missing label")
+                    .strip_suffix(':')
+                    .unwrap()
+                    .to_string();
+
+                if let Compare::GT = self.cmp {
+                    self.line_num = *self.jump_map.get(&label).unwrap();
+                } else if let Compare::LT = self.cmp {
+                    self.line_num = *self.jump_map.get(&label).unwrap();
+                }
+            }
+
+            Some("BGT") => {
+                let label = line
+                    .next()
+                    .expect("Missing label")
+                    .strip_suffix(':')
+                    .unwrap()
+                    .to_string();
+
+                if let Compare::GT = self.cmp {
+                    self.line_num = *self.jump_map.get(&label).unwrap();
+                }
+            }
+
+            Some("BLT") => {
+                let label = line
+                    .next()
+                    .expect("Missing label")
+                    .strip_suffix(':')
+                    .unwrap()
+                    .to_string();
+                
+                if let Compare::LT = self.cmp {
+                    self.line_num = *self.jump_map.get(&label).unwrap();
+                }
+            }
 
             Some("AND") => (),
             Some("ORR") => (),
