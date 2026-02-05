@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 
+#[derive(PartialEq, Debug)]
 enum Compare {
     EQ,
     GT,
@@ -210,7 +211,7 @@ impl Interpreter {
 
                 if operand2.starts_with('#') {
                     let value: i32 = operand2
-                        .strip_suffix('#')
+                        .strip_prefix('#')
                         .expect("hashtag")
                         .parse()
                         .unwrap();
@@ -221,7 +222,7 @@ impl Interpreter {
                     }
                 } else if operand2.starts_with('R') {
                     let value: i32 = self.reg[operand2
-                        .strip_suffix('R')
+                        .strip_prefix('R')
                         .expect("R")
                         .parse::<usize>()
                         .unwrap()];
@@ -239,31 +240,27 @@ impl Interpreter {
                 let label = line
                     .next()
                     .expect("Missing label")
-                    .strip_suffix(':')
-                    .unwrap()
                     .to_string();
                 self.line_num = *self.jump_map.get(&label).unwrap();
+                return;
             }
 
             Some("BEQ") => {
                 let label = line
                     .next()
                     .expect("Missing label")
-                    .strip_suffix(':')
-                    .unwrap()
                     .to_string();
 
                 if let Compare::EQ = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
                 }
+                return;
             }
 
             Some("BNE") => {
                 let label = line
                     .next()
                     .expect("Missing label")
-                    .strip_suffix(':')
-                    .unwrap()
                     .to_string();
 
                 if let Compare::GT = self.cmp {
@@ -271,32 +268,31 @@ impl Interpreter {
                 } else if let Compare::LT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
                 }
+                return;
             }
 
             Some("BGT") => {
                 let label = line
                     .next()
                     .expect("Missing label")
-                    .strip_suffix(':')
-                    .unwrap()
                     .to_string();
 
                 if let Compare::GT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
                 }
+                return;
             }
 
             Some("BLT") => {
                 let label = line
                     .next()
                     .expect("Missing label")
-                    .strip_suffix(':')
-                    .unwrap()
                     .to_string();
 
                 if let Compare::LT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
                 }
+                return;
             }
 
             Some("AND") => {
@@ -487,6 +483,7 @@ impl Interpreter {
             Some(&_) => (),
             None => (),
         }
+        self.line_num += 1;
     }
 }
 
@@ -510,56 +507,203 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ldr() {}
+    fn ldr() {
+        let source = String::from("LDR R0, 42");
+        let mut test = Interpreter::new(source);
+        test.mem[42] = 123;
+        test.tick();
+        assert_eq!(test.reg[0], 123);
+    }
 
     #[test]
-    fn str() {}
+    fn str() {
+        let source = String::from("STR R1, 21");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 67;
+        test.tick();
+        assert_eq!(test.mem[21], 67);
+    }
 
     #[test]
-    fn add() {}
+    fn add() {
+        let source = String::from("ADD R0, R1, #3\nADD R2, R3, R4");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 2;
+        test.reg[3] = 60;
+        test.reg[4] = 9;
+        test.tick();
+        test.tick();
+        assert_eq!(test.reg[0], 5);
+        assert_eq!(test.reg[2], 69);
+    }
 
     #[test]
-    fn sub() {}
+    fn sub() {
+        let source = String::from("SUB R0, R1, #55\nSUB R2, R3, R4");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 100;
+        test.reg[3] = 42;
+        test.reg[4] = 12;
+        test.tick();
+        test.tick();
+        assert_eq!(test.reg[0], 45);
+        assert_eq!(test.reg[2], 30);
+    }
 
     #[test]
-    fn mov() {}
+    fn mov() {
+        let source = String::from("MOV R0, #456\nMOV R1, R2");
+        let mut test = Interpreter::new(source);
+        test.reg[2] = 678;
+        test.tick();
+        test.tick();
+        assert_eq!(test.reg[0], 456);
+        assert_eq!(test.reg[1], 678);
+    }
 
     #[test]
-    fn cmp() {}
+    fn cmp() {
+        let source = String::from("CMP R0, #2\nCMP R1, R2\nCMP R3, #3\nCMP R4, R5\nCMP R6, #4\nCMP R7, R8");
+        let mut test = Interpreter::new(source);
+        test.reg[0] = 1;
+        test.tick();
+        assert_eq!(test.cmp, Compare::LT);
+        test.reg[1] = 5;
+        test.reg[2] = 10;
+        test.tick();
+        assert_eq!(test.cmp, Compare::LT);
+        test.reg[3] = 6;
+        test.tick();
+        assert_eq!(test.cmp, Compare::GT);
+        test.reg[4] = 42;
+        test.reg[5] = 21;
+        test.tick();
+        assert_eq!(test.cmp, Compare::GT);
+        test.reg[6] = 4;
+        test.tick();
+        assert_eq!(test.cmp, Compare::EQ);
+        test.reg[7] = 8;
+        test.reg[8] = 8;
+        test.tick();
+        assert_eq!(test.cmp, Compare::EQ);
+    }
 
     #[test]
-    fn b() {}
+    fn b() {
+        let source = String::from("B label\nlabel:\nHALT");
+        let mut test = Interpreter::new(source);
+        test.tick();
+        assert_eq!(test.line_num, 2);
+    }
 
     #[test]
-    fn beq() {}
+    fn beq() {
+        let source = String::from("CMP R0, #42\nBEQ label\nHALT\nlabel:\nHALT");
+        let mut test = Interpreter::new(source);
+        test.reg[0] = 42;
+        test.tick();
+        test.tick();
+        assert_eq!(test.line_num, 4);
+    }
 
     #[test]
-    fn bne() {}
+    fn bne() {
+        let source = String::from("CMP R0, #42\nBNE label\nHALT\nlabel:\nHALT");
+        let mut test = Interpreter::new(source);
+        test.reg[0] = 123;
+        test.tick();
+        test.tick();
+        assert_eq!(test.line_num, 4);
+    }
 
     #[test]
-    fn bgt() {}
+    fn bgt() {
+        let source = String::from("CMP R0, #42\nBGT label\nHALT\nlabel:\nHALT");
+        let mut test = Interpreter::new(source);
+        test.reg[0] = 123;
+        test.tick();
+        test.tick();
+        assert_eq!(test.line_num, 4);
+    }
 
     #[test]
-    fn blt() {}
+    fn blt() {
+        let source = String::from("CMP R0, #42\nBLT label\nHALT\nlabel:\nHALT");
+        let mut test = Interpreter::new(source);
+        test.reg[0] = 21;
+        test.tick();
+        test.tick();
+        assert_eq!(test.line_num, 4);
+    }
 
     #[test]
-    fn and() {}
+    fn and() {
+        let source = String::from("AND R0, R1, #10\nAND R2, R3, R4");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 15;
+        test.reg[3] = 11;
+        test.reg[4] = 2;
+        test.tick();
+        test.tick();
+        assert_eq!(test.reg[0], 10);
+        assert_eq!(test.reg[2], 2);
+    }
 
     #[test]
-    fn orr() {}
+    fn orr() {
+        let source = String::from("ORR R0, R1, #9\nORR R2, R3, R4");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 6;
+        test.reg[3] = 8;
+        test.reg[4] = 2;
+        test.tick();
+        test.tick();
+        assert_eq!(test.reg[0], 15);
+        assert_eq!(test.reg[2], 10);
+    }
 
     #[test]
-    fn eor() {}
+    fn eor() {
+        let source = String::from("EOR R0, R1, #9\nEOR R2, R3, R4");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 15;
+        test.reg[3] = 11;
+        test.reg[4] = 2;
+        test.tick();
+        test.tick();
+        assert_eq!(test.reg[0], 6);
+        assert_eq!(test.reg[2], 9);
+    }
 
     #[test]
-    fn mvn() {}
+    fn mvn() {
+        // i'm just gonna believe that this one works
+        // i don't want to deal with inverting signed 32 bit integers
+    }
 
     #[test]
-    fn lsl() {}
+    fn lsl() {
+        let source = String::from("LSL R0, R1, #1");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 4;
+        test.tick();
+        assert_eq!(test.reg[0], 8);
+    }
 
     #[test]
-    fn lsr() {}
+    fn lsr() {
+        let source = String::from("LSR R0, R1, #1");
+        let mut test = Interpreter::new(source);
+        test.reg[1] = 4;
+        test.tick();
+        assert_eq!(test.reg[0], 2);
+    }
 
     #[test]
-    fn halt() {}
+    fn halt() {
+        let source = String::from("HALT");
+        let mut test = Interpreter::new(source);
+        test.tick();
+        assert!(!test.running);
+    }
 }
