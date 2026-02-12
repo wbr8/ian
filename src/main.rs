@@ -2,6 +2,8 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
+use std::io;
+use std::io::Write;
 
 #[derive(PartialEq, Debug)]
 enum Compare {
@@ -44,6 +46,14 @@ impl Interpreter {
             source: source_vec,
             jump_map: jump_hashmap,
         }
+    }
+
+    fn reset(&mut self) {
+        self.reg = [0; 16];
+        self.mem = [0; 256];
+        self.line_num = 0;
+        self.running = true;
+        self.cmp = Compare::NONE;
     }
 
     fn tick(&mut self) {
@@ -485,21 +495,119 @@ impl Interpreter {
         }
         self.line_num += 1;
     }
+
+    fn menu(&mut self, program_running: &mut bool) {
+        println!("Current line number = {}", self.line_num);
+        println!("1. Tick one line");
+        println!("2. Run full program");
+        println!("3. Display contents of register");
+        println!("4. Display contents of memory address");
+        println!("5. Set register value");
+        println!("6. Set memory value at address");
+        println!("7. Reset interpreter");
+        println!("8. Quit");
+        print!("Select: ");
+        io::stdout().flush().unwrap();
+
+        let mut selection = String::new();
+        let stdin = io::stdin();
+        stdin.read_line(&mut selection).unwrap();
+        match selection.trim() {
+            "1" => {
+                self.tick();
+                println!("One line ticked.");
+                println!();
+            }
+
+            "2" => {
+                while self.running {
+                    self.tick();
+                }
+                println!("Full program ran.");
+                println!();
+            }
+
+            "3" => {
+                print!("Enter register number: ");
+                io::stdout().flush().unwrap();
+                let mut register = String::new();
+                stdin.read_line(&mut register).unwrap();
+                let register: usize = register.trim().parse().unwrap();
+                println!("Contents of register {} = {}", register, self.reg[register]);
+                println!();
+            }
+
+            "4" => {
+                print!("Enter memory address: ");
+                io::stdout().flush().unwrap();
+                let mut mem_address = String::new();
+                stdin.read_line(&mut mem_address).unwrap();
+                let mem_address: usize = mem_address.trim().parse().unwrap();
+                println!("Contents of memory at {} = {}", mem_address, self.mem[mem_address]);
+                println!();
+            }
+
+            "5" => {
+                print!("Select register: ");
+                io::stdout().flush().unwrap();
+                let mut register = String::new();
+                stdin.read_line(&mut register).unwrap();
+                let register: usize = register.trim().parse().unwrap();
+                print!("Enter value to set: ");
+                io::stdout().flush().unwrap();
+                let mut value = String::new();
+                stdin.read_line(&mut value).unwrap();
+                let value: i32 = value.trim().parse().unwrap();
+                self.reg[register] = value;
+                println!("Set register {} to value {}", register, value);
+                println!();
+            }
+
+
+            "6" => {
+                print!("Select memory address: ");
+                io::stdout().flush().unwrap();
+                let mut mem_address = String::new();
+                stdin.read_line(&mut mem_address).unwrap();
+                let mem_address: usize = mem_address.trim().parse().unwrap();
+                print!("Enter value to set: ");
+                io::stdout().flush().unwrap();
+                let mut value = String::new();
+                stdin.read_line(&mut value).unwrap();
+                let value: i32 = value.trim().parse().unwrap();
+                self.mem[mem_address] = value;
+                println!("Set memory address {} to value {}", mem_address, value);
+                println!();
+            }
+
+            "7" => {
+                self.reset();
+                println!("Interpreter reset");
+                println!();
+            }
+
+            "8" => {
+                *program_running = false;
+            }
+
+            _ => ()
+        }
+    }
 }
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = &args[1];
 
-    println!("File {file_path}");
-
     let source = fs::read_to_string(file_path).expect("File read error");
 
-    println!("With contents:\n{source}");
-
-    let int = Interpreter::new(source);
-    println!("{is:?}", is = int.source);
-    println!("{jm:?}", jm = int.jump_map);
+    let mut int = Interpreter::new(source);
+    
+    let mut program_running = true;
+    while program_running {
+        int.menu(&mut program_running);
+    }
 }
 
 #[cfg(test)]

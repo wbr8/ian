@@ -1,6 +1,6 @@
-INP R0,2
-label1:
-INP R1,2
-ADD R2,R1,R0
-label2:
+LDR R0, 40
+LDR R1, 41
+SUB R2, R0, R1
+LSL R3, R2, #1
+STR R3, 42
 HALT
