@@ -263,8 +263,8 @@ impl Interpreter {
 
                 if let Compare::EQ = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
+                    return;
                 }
-                return;
             }
 
             Some("BNE") => {
@@ -275,10 +275,11 @@ impl Interpreter {
 
                 if let Compare::GT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
+                    return;
                 } else if let Compare::LT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
+                    return;
                 }
-                return;
             }
 
             Some("BGT") => {
@@ -289,8 +290,8 @@ impl Interpreter {
 
                 if let Compare::GT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
+                    return;
                 }
-                return;
             }
 
             Some("BLT") => {
@@ -301,8 +302,8 @@ impl Interpreter {
 
                 if let Compare::LT = self.cmp {
                     self.line_num = *self.jump_map.get(&label).unwrap();
+                    return;
                 }
-                return;
             }
 
             Some("AND") => {
